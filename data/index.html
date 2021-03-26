@@ -1,0 +1,20 @@
+<!DOCTYPE HTML><html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=0.9">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <link rel="apple-touch-icon" sizes="120x120" href="/apple-icon-120x120.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png">
+    <link rel="stylesheet" type="text/css" href="style.css">
+    <script src="script.js" defer></script>
+    <title>HC-X1 Remote</title>
+</head>
+<body>
+    <h2>HC-X1 Remote</h2>
+    <p><span>Focus: </span><span id="textFocusValue">%FOCUSVALUE%</span></p>
+    <p><input type="range" oninput="updateSlider(this)" onchange="updateSlider(this, true)" id="focus" min="0" max="1000" value="%FOCUSVALUE%" step="1" class="slider"></p>
+    <p><span>Iris: </span><span id="textIrisValue">%IRISVALUE%</span></p>
+    <p><input type="range" oninput="updateSlider(this)" onchange="updateSlider(this, true)" id="iris" min="0" max="1000" value="%IRISVALUE%" step="1" class="slider"></p>
+    <p><span>Zoom: </span><span id="textZoomValue">%ZOOMVALUE%</span></p>
+    <p><input type="range" oninput="updateSliderZoom(this)" onchange="updateSliderZoom(this, true)" id="zoom" min="0" max="1000" value="%ZOOMVALUE%" step="1" class="slider zoom"></p>
+</body>
+</html>
