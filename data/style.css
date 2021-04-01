@@ -10,3 +10,10 @@ body {margin:0px auto; padding-bottom: 25px;}
 .slider.zoom { height: 60px;} 
 .slider.zoom::-webkit-slider-thumb {height: 75px;}
 .slider.zoom::-moz-range-thumb { height: 75px;} 
+
+input:disabled {
+    background: gainsboro;
+  }
+  input[value]:disabled {
+    color: whitesmoke;
+  }
