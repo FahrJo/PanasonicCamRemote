@@ -38,9 +38,8 @@ const char* password = "PANCAM_REMOTE";
 boolean exec_ota_flag = false;
 
 const int LedState = 2;
-const int OutAutoIris = 16;
-const int OutRecord = 17;
-bool state = false;
+const int OutRecord = 16;
+const int OutAutoIris = 17;
 
 // setting PWM properties
 const int freq = 5000;
@@ -180,6 +179,9 @@ void initGPIO(){
   
   // attach the channel to the GPIO to be controlled
   ledcAttachPin(LedState, ledChannel);
+
+  digitalWrite(OutAutoIris, LOW);
+  digitalWrite(OutRecord, HIGH);
 }
 
 void initFS(){
@@ -333,7 +335,7 @@ void initWebServer(){
 
   #pragma endregion
 
-    // Start server
+  // Start server
   server.begin();
 }
 
