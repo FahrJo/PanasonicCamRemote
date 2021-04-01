@@ -37,7 +37,10 @@ const char* password = "PANCAM_REMOTE";
 
 boolean exec_ota_flag = false;
 
-const int output = 2;
+const int LedState = 2;
+const int OutAutoIris = 16;
+const int OutRecord = 17;
+bool state = false;
 
 // setting PWM properties
 const int freq = 5000;
@@ -172,9 +175,11 @@ void handleEspNowMessage(const uint8_t * mac, const uint8_t *incomingData, int l
 void initGPIO(){
     // configure LED PWM functionalitites
   ledcSetup(ledChannel, freq, resolution);
+  pinMode(OutAutoIris, OUTPUT);
+  pinMode(OutRecord, OUTPUT);
   
   // attach the channel to the GPIO to be controlled
-  ledcAttachPin(output, ledChannel);
+  ledcAttachPin(LedState, ledChannel);
 }
 
 void initFS(){
@@ -354,13 +359,15 @@ void setup(void) {
   initWebServer();
 
   // Boot finished
-  ledcWrite(ledChannel, 100);
+  ledcWrite(ledChannel, 50);
 }
 
 
 
 void loop() { 
   if (millis() > lastExecutionTime + delayTime){
+    lastExecutionTime = millis();
+
     ws.cleanupClients();
   }
 }
