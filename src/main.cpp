@@ -67,19 +67,16 @@ void setup(void) {
 
   Serial.println("Getting single-ended readings from AIN0..3");
   Serial.println("ADC Range: +/- 6.144V (1 bit = 3mV/ADS1015, 0.1875mV/ADS1115)");
- 
+
   ads.begin();
 }
 
 void loop() {
-  //int16_t adc0, adc1, adc2, adc3;
   lensMessage.focus = map(ads.readADC_SingleEnded(0), 100, 17300, 0, 1000);
   lensMessage.iris = map(ads.readADC_SingleEnded(1), 100, 17300, 0, 1000);
   lensMessage.zoom = map(ads.readADC_SingleEnded(2), 100, 17300, 0, 1000);
-  lensMessage.autoIris = false;
-  lensMessage.record = false;
-
-  //adc3 = ads.readADC_SingleEnded(3);
+  //lensMessage.autoIris = false;
+  //lensMessage.record = false;
 
   if (DEBUG) {
     Serial.print("Focus: ");
@@ -97,4 +94,6 @@ void loop() {
   }
 
   esp_now_send(NULL, (uint8_t *) &lensMessage, sizeof(lensMessage));
+
+  delay(50);
 }
