@@ -5,11 +5,11 @@
 
 // message structure for sensor values
 typedef struct message {
-   int16_t focus;
-   int16_t iris;
-   int16_t zoom;
-   int16_t focus_ll;    // lower limit for fine adjusting
-   int16_t focus_ul;    // upper limit for fine adjusting
+   uint16_t focus;
+   uint16_t iris;
+   uint16_t zoom;
+   uint16_t focus_ll;    // lower limit for fine adjusting
+   uint16_t focus_ul;    // upper limit for fine adjusting
    bool autoIris;
    bool record;
    bool prog_mode;      // programming mode for presets enabled

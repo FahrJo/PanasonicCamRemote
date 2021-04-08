@@ -29,7 +29,7 @@ message messageEsp;
 message messageHttp;
 
 message outputImage;
-message outputImageDefault = {0, 0, 500};
+message outputImageDefault = {0, 0, 500, 0, 1000}; // focus, iris, zoom, focus_ll, focus_ul
 
 // Replace with your network credentials
 const char* ssid = "PANCAM_REMOTE";
@@ -38,8 +38,8 @@ const char* password = "PANCAM_REMOTE";
 boolean exec_ota_flag = false;
 
 const int LedState = 2;
-const int OutRecord = 16;
-const int OutAutoIris = 17;
+const int OUT_RECORD = 16;
+const int OUT_AUTOIRIS = 17;
 
 // setting PWM properties
 const int freq = 5000;
@@ -47,8 +47,9 @@ const int ledChannel = 0;
 const int resolution = 8;
 
 
-long lastExecutionTime = 0;
-long delayTime = 1000;
+unsigned long lastExecutionTime = 0;
+unsigned long delayTime = 1000;
+
 
 void setOutputImage(protocolType type) {
   switch (type) {
@@ -62,10 +63,22 @@ void setOutputImage(protocolType type) {
                   break;
   }
 
+  // remap values for higher resolution of hmi controlls
+  uint16_t focus =  map(outputImage.focus, 0, 1000, outputImage.focus_ll, outputImage.focus_ul);
+
+  digitalWrite(OUT_AUTOIRIS, !outputImage.autoIris);
+  digitalWrite(OUT_RECORD, outputImage.record);
+
+  // Send config data only in INIT mode. Otherwise use the fast write methode
+  if (type == INIT) {
   // value is vref/2, with 2.048V internal vref and *2X gain*
-  mcp.setChannelValue(MCP4728_CHANNEL_A, outputImage.focus * 2, MCP4728_VREF_INTERNAL, MCP4728_GAIN_2X);
+  mcp.setChannelValue(MCP4728_CHANNEL_A, focus * 2, MCP4728_VREF_INTERNAL, MCP4728_GAIN_2X);
   mcp.setChannelValue(MCP4728_CHANNEL_B, outputImage.iris * 2, MCP4728_VREF_INTERNAL, MCP4728_GAIN_2X);
   mcp.setChannelValue(MCP4728_CHANNEL_C, outputImage.zoom * 2.65, MCP4728_VREF_INTERNAL, MCP4728_GAIN_2X);
+  }
+  else{
+    mcp.fastWrite(focus * 2, outputImage.iris * 2, outputImage.zoom * 2.65, 0);
+  }
 }
 
 
@@ -76,6 +89,12 @@ void setOutputImage(protocolType type) {
 // Create AsyncWebServer object on port 80 and a websocket
 AsyncWebServer server(80);
 AsyncWebSocket ws("/ws");
+
+
+bool validateData(message *message){
+  return ((message->focus >= 0) && (message->focus <= 1000) && (message->iris >= 0) && (message->iris <= 1000) && (message->zoom >= 0) && (message->zoom <= 1000) && (message->focus_ll >= 0) && (message->focus_ll <= 1000) && (message->focus_ul >= 0) && (message->focus_ul <= 1000));
+}
+
 
 void notifyClients(uint8_t *data, size_t len) {
   ws.binaryAll(data, len);
@@ -92,14 +111,22 @@ void notifyClients(uint8_t *data, size_t len, AsyncWebSocketClient *sender){
 void handleWebSocketMessage(void *arg, uint8_t *data, size_t len, AsyncWebSocketClient *sender) {
   AwsFrameInfo *info = (AwsFrameInfo*)arg;
   if (info->final && info->index == 0 && info->len == len && info->opcode == WS_BINARY) {
-    notifyClients(data, len, sender);
-    // for(int i=0; i < len; i+=2) {
-    //   Serial.print(*(uint16_t *) &data[i]);
-    //   Serial.print("|");
-    // }
-    // Serial.println();
+    
+    if (DEBUG) {
+      Serial.print("WS: ");
+      for(int i=0; i < len; i+=2) {
+        Serial.print(*(uint16_t *) &data[i]);
+        Serial.print("|");
+      }
+      Serial.println();
+    }
+
     messageWs = *(message *)data;
-    setOutputImage(WS);
+    if (validateData(&messageWs)){
+      // Notify all websocket clients except sender
+      notifyClients(data, len, sender);
+      setOutputImage(WS);
+    }
   }
   delay(1);
 }
@@ -134,54 +161,59 @@ String processor(const String& var){
   if (var == "FOCUSVALUE"){
     return String(outputImage.focus);
   }
-  if (var == "IRISVALUE"){
+  else if (var == "IRISVALUE"){
     return String(outputImage.iris);
   }
-  if (var == "ZOOMVALUE"){
+  else if (var == "ZOOMVALUE"){
     return String(outputImage.zoom);
+  }
+  else if (var == "FOCUSVALUE_LL"){
+    return String(outputImage.focus_ll);
+  }
+  else if (var == "FOCUSVALUE_UL"){
+    return String(outputImage.focus_ul);
+  }
+  else if (var == "AUTOIRIS") {
+    return (outputImage.autoIris) ? "checked" : "";
   }
   return String();
 }
 
 
-void handleEspNowMessage(const uint8_t * mac, const uint8_t *incomingData, int len) {
+void handleEspNowMessage(const uint8_t * mac, const uint8_t *data, int len) {
   // We don't use mac to verify the sender
-  // Let us transform the incomingData into our message structure
-  memcpy(&messageEsp, incomingData, sizeof(messageEsp));
+  // Let us transform the data into our message structure
+  //memcpy(&messageEsp, data, sizeof(messageEsp));
+  messageEsp = *(message *)data;
 
   if (DEBUG) {
-    Serial.println("Message received.");
-    Serial.print("Focus:");
-    Serial.println(messageEsp.focus); 
-    Serial.print("Iris:");
-    Serial.println(messageEsp.iris);
-    Serial.print("Zoom:");
-    Serial.println(messageEsp.zoom);
-    Serial.print("Auto-Iris:");
-    Serial.println(messageEsp.autoIris);
-    Serial.print("Record:");
-    Serial.println(messageEsp.record);
+      Serial.print("EN: ");
+      for(int i=0; i < len; i+=2) {
+        Serial.print(*(uint16_t *) &data[i]);
+        Serial.print("|");
+      }
+      Serial.println();
+    }
+  
+  if (validateData(&messageWs)){
+    // Notify all websocket clients
+    notifyClients((uint8_t *)data, len);
+    setOutputImage(ESP_NOW);  
   }
-  
-  setOutputImage(ESP_NOW);
-
-  AsyncWebSocketMessageBuffer buffer((uint8_t *)incomingData, len);
-  
-  // Notify all websocket clients
-  ws.binaryAll(&buffer);
+  delay(1);
 }
 
 void initGPIO(){
     // configure LED PWM functionalitites
   ledcSetup(ledChannel, freq, resolution);
-  pinMode(OutAutoIris, OUTPUT);
-  pinMode(OutRecord, OUTPUT);
+  pinMode(OUT_AUTOIRIS, OUTPUT);
+  pinMode(OUT_RECORD, OUTPUT);
   
   // attach the channel to the GPIO to be controlled
   ledcAttachPin(LedState, ledChannel);
 
-  digitalWrite(OutAutoIris, LOW);
-  digitalWrite(OutRecord, HIGH);
+  digitalWrite(OUT_AUTOIRIS, LOW);
+  digitalWrite(OUT_RECORD, HIGH);
 }
 
 void initFS(){
@@ -333,6 +365,40 @@ void initWebServer(){
     request->send(200, "text/plain", "OK");
   });
 
+  // Send a GET request to <ESP_IP>/autoIris?value=<inputMessage>
+  server.on("/autoIris", HTTP_GET, [] (AsyncWebServerRequest *request) {
+    String inputMessage;
+    // GET input2 value on <ESP_IP>/autoIris?value=<inputMessage>
+    if (request->hasParam(PARAM_INPUT)) {
+      messageHttp = outputImage;
+      messageHttp.autoIris = (request->getParam(PARAM_INPUT)->value() == "true");
+
+      setOutputImage(HTTP);
+    }
+    else {
+      inputMessage = "No message sent";
+    }
+    if (DEBUG) Serial.println(inputMessage);
+    request->send(200, "text/plain", "OK");
+  });
+
+  // Send a GET request to <ESP_IP>/record?value=<inputMessage>
+  server.on("/record", HTTP_GET, [] (AsyncWebServerRequest *request) {
+    String inputMessage;
+    // GET input2 value on <ESP_IP>/record?value=<inputMessage>
+    if (request->hasParam(PARAM_INPUT)) {
+      messageHttp = outputImage;
+      messageHttp.record = (request->getParam(PARAM_INPUT)->value() == "true");
+
+      setOutputImage(HTTP);
+    }
+    else {
+      inputMessage = "No message sent";
+    }
+    if (DEBUG) Serial.println(inputMessage);
+    request->send(200, "text/plain", "OK");
+  });
+
   #pragma endregion
 
   // Start server
@@ -363,7 +429,6 @@ void setup(void) {
   // Boot finished
   ledcWrite(ledChannel, 50);
 }
-
 
 
 void loop() { 

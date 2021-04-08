@@ -1,19 +1,184 @@
-html {font-family: Arial; display: inline-block; text-align: center;}
-h2 {font-size: 2.3rem;}
-p {font-size: 1.9rem;}
-body {margin:0px auto; padding-bottom: 25px;}
+html {
+  font-family: Arial;
+  display: inline-block;
+  text-align: center;
+}
+h2 {
+  font-size: 2rem;
+}
+p {
+  font-size: 1.7rem;
+}
+body {
+  margin: 0px auto;
+  padding-bottom: 25px;
+}
 
-.slider { -webkit-appearance: none; margin: 14px; width: 360px; height: 25px; background: #FFD65C;
-    outline: none; -webkit-transition: .2s; transition: opacity .2s;}
-.slider::-webkit-slider-thumb {-webkit-appearance: none; appearance: none; width: 35px; height: 50px; background: #003249; cursor: pointer;}
-.slider::-moz-range-thumb { width: 35px; height: 50px; background: #003249; cursor: pointer;} 
-.slider.zoom { height: 60px;} 
-.slider.zoom::-webkit-slider-thumb {height: 75px;}
-.slider.zoom::-moz-range-thumb { height: 75px;} 
+/***********************
+ * Container
+ */
+.container {
+  margin: 0 auto 0 auto;
+  position: relative;
+  font-size: 1.7rem;
+  height: 50px;
+  display: flex;
+  width: 360px;
+}
+.container#focus-ext-container {
+  display: flex;
+}
+.container#focus-ext-container.hide {
+  display: none;
+}
 
+/***********************
+ * Slider style
+ */
+.slider {
+  -webkit-appearance: none;
+  margin: 14px;
+  width: 360px;
+  height: 25px;
+  background: #ffd65c;
+  outline: none;
+  -webkit-transition: 0.2s;
+  transition: opacity 0.2s;
+  box-sizing: border-box;
+  appearance: none;
+  pointer-events: none;
+  margin-left: auto;
+  margin-right: auto;
+  left: 0;
+  right: 0;
+  text-align: center;
+}
+.slider.ll,
+.slider.ul {
+  margin: 0;
+  height: 15px;
+}
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 35px;
+  height: 50px;
+  background: #064b6b;
+  cursor: pointer;
+  position: relative;
+  pointer-events: all;
+}
+.slider::-moz-range-thumb {
+  width: 35px;
+  height: 50px;
+  background: #064b6b;
+  cursor: pointer;
+}
+.slider.ll::-webkit-slider-thumb {
+  clip-path: polygon(0 35%, 100% 0, 100% 100%, 0% 100%);
+}
+.slider.ul::-webkit-slider-thumb {
+  clip-path: polygon(0 0, 100% 35%, 100% 100%, 0% 100%);
+}
+.slider.zoom {
+  height: 60px;
+}
+.slider.zoom::-webkit-slider-thumb {
+  height: 75px;
+}
+.slider.zoom::-moz-range-thumb {
+  height: 75px;
+}
+.slider:active,
+.slider:focus {
+  outline: none;
+}
+.slider::-webkit-slider-thumb::before {
+  content: " ";
+  display: block;
+  position: absolute;
+  top: 13px;
+  left: 100%;
+  width: 2000px;
+  height: 2px;
+}
 input:disabled {
-    background: gainsboro;
-  }
-  input[value]:disabled {
-    color: whitesmoke;
-  }
+  background: gainsboro;
+}
+input[value]:disabled {
+  color: whitesmoke;
+}
+
+/***********************
+ * Multi-range slider
+ */
+.multi-range {
+  position: relative;
+  height: 50px;
+  width: 100%;
+}
+.multi-range .slider {
+  position: absolute;
+}
+.multi-range .slider:nth-child(2) {
+  background: none;
+}
+
+/***********************
+ * Toggle Switch Style
+ */
+/* The switch - the box around the slider */
+.switch {
+  position: relative;
+  width: 60px;
+  height: 34px;
+  text-align: left;
+  margin: 8px 20px 8px 0;
+}
+/* Hide default HTML checkbox */
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+/* The slider */
+.toggleswitch {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgb(173, 173, 173);
+  -webkit-transition: 0.4s;
+  transition: 0.4s;
+}
+.toggleswitch:before {
+  position: absolute;
+  content: "";
+  height: 26px;
+  width: 26px;
+  left: 4px;
+  bottom: 4px;
+  background-color: #ffd65c;
+  -webkit-transition: 0.4s;
+  transition: 0.4s;
+}
+.toggleswitch.disabled:before {
+  background-color: gainsboro;
+}
+input:checked + .toggleswitch {
+  background-color: #064b6b;
+}
+input:focus + .toggleswitch {
+  box-shadow: 0 0 1px #064b6b;
+}
+input:checked + .toggleswitch:before {
+  -webkit-transform: translateX(26px);
+  -ms-transform: translateX(26px);
+  transform: translateX(26px);
+}
+.container span {
+  display: inline-flex;
+  align-items: center;
+}

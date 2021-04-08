@@ -5,26 +5,31 @@ let messageDigital = new Uint8Array(6); //  6 Byte
 let lastMessageTimestamp = 0;
 let websocketOpen = false;
 
+let upperLowerDelta = 150;
+
 let focusSlider = undefined;
+let focusLimitsContainer = undefined;
+let focusSlider_ll = undefined;
+let focusSlider_ul = undefined;
 let focusLabel = undefined;
 let irisSlider = undefined;
 let irisLabel = undefined;
 let zoomSlider = undefined;
 let zoomLabel = undefined;
+let extFocusSwitch = undefined;
+let autoIrisSwitch = undefined;
 
 function updateSlider(element, final = false) {
   if (!lock || final) {
     lock = true;
     var value = element.value;
     if (element.id == "focus") {
-      messageAnalog[0] = value; 
+      messageAnalog[0] = value;
       focusLabel.innerHTML = value;
-    }
-    else if (element.id == "iris") {
+    } else if (element.id == "iris") {
       messageAnalog[1] = value;
       irisLabel.innerHTML = value;
-    }
-    else console.log("no place in message array");
+    } else console.log("no place in message array");
 
     if (websocketOpen) {
       sendToWebsocket();
@@ -52,8 +57,7 @@ function updateSliderZoom(element, final = false) {
     if (element.id == "zoom") {
       messageAnalog[2] = zoomValue;
       zoomLabel.innerHTML = zoomValue;
-    }
-    else console.log("no place in message array");
+    } else console.log("no place in message array");
 
     if (websocketOpen) {
       sendToWebsocket();
@@ -68,6 +72,82 @@ function updateSliderZoom(element, final = false) {
       xhr.send();
     }
     lock = false;
+  }
+}
+
+function onExtendedFocusControl(element) {
+  if (element.checked === true) {
+    focusLimitsContainer.classList.remove("hide");
+  } else {
+    focusLimitsContainer.classList.add("hide");
+  }
+}
+
+function onUpperSliderInput() {
+  lowerVal = parseInt(focusSlider_ll.value);
+  upperVal = parseInt(focusSlider_ul.value);
+  lowerVal_new = lowerVal;
+  upperVal_new = upperVal;
+
+  if (upperVal < lowerVal + upperLowerDelta) {
+    lowerVal_new = upperVal - upperLowerDelta;
+
+    if (lowerVal == focusSlider_ll.min) {
+      upperVal_new = upperLowerDelta;
+    }
+  }
+
+  focusSlider_ll.value = lowerVal_new;
+  focusSlider_ul.value = upperVal_new;
+
+  messageAnalog[3] = lowerVal_new;
+  messageAnalog[4] = upperVal_new;
+  if (websocketOpen) {
+    sendToWebsocket();
+  }
+}
+
+function onLowerSliderInput() {
+  lowerVal = parseInt(focusSlider_ll.value);
+  upperVal = parseInt(focusSlider_ul.value);
+  lowerVal_new = lowerVal;
+  upperVal_new = upperVal;
+
+  if (lowerVal > upperVal - upperLowerDelta) {
+    upperVal_new = lowerVal + upperLowerDelta;
+
+    if (upperVal == focusSlider_ul.max) {
+      lowerVal_new = parseInt(focusSlider_ul.max) - upperLowerDelta;
+    }
+  }
+
+  focusSlider_ll.value = lowerVal_new;
+  focusSlider_ul.value = upperVal_new;
+
+  messageAnalog[3] = lowerVal_new;
+  messageAnalog[4] = upperVal_new;
+  if (websocketOpen) {
+    sendToWebsocket();
+  }
+}
+
+function onAutoIrisSwitch(element) {
+  messageDigital[0] = element.checked;
+
+  if (element.checked) irisSlider.setAttribute("disabled", "disabled");
+  else irisSlider.removeAttribute("disabled");
+
+  if (websocketOpen) {
+    sendToWebsocket();
+  } else {
+    var xhr = new XMLHttpRequest();
+    xhr.onreadystatechange = function () {
+      if (xhr.readyState == XMLHttpRequest.DONE) {
+        lock = false;
+      }
+    };
+    xhr.open("GET", "/" + element.id + "?value=" + element.checked, true);
+    xhr.send();
   }
 }
 
@@ -97,7 +177,6 @@ function Pinger_ping() {
   }
 }
 
-
 /*******************************************
  * lock inputs to avoid overkill on server
  */
@@ -105,14 +184,21 @@ var intervalId = setInterval(lockInput, 1000);
 
 function lockInput() {
   if (lastMessageTimestamp + 1000 <= Date.now()) {
-    focusSlider.removeAttribute('disabled');
-    irisSlider.removeAttribute('disabled');
-    zoomSlider.removeAttribute('disabled');
-  }
-  else {
-    focusSlider.setAttribute('disabled','disabled');
-    irisSlider.setAttribute('disabled','disabled');
-    zoomSlider.setAttribute('disabled','disabled');
+    focusSlider.removeAttribute("disabled");
+    !autoIrisSwitch.checked && irisSlider.removeAttribute("disabled");
+    zoomSlider.removeAttribute("disabled");
+    focusSlider_ll.removeAttribute("disabled");
+    focusSlider_ul.removeAttribute("disabled");
+    autoIrisSwitch.removeAttribute("disabled");
+    autoIrisSwitch.nextElementSibling.classList.remove("disabled");
+  } else {
+    focusSlider.setAttribute("disabled", "disabled");
+    irisSlider.setAttribute("disabled", "disabled");
+    zoomSlider.setAttribute("disabled", "disabled");
+    focusSlider_ll.setAttribute("disabled", "disabled");
+    focusSlider_ul.setAttribute("disabled", "disabled");
+    autoIrisSwitch.setAttribute("disabled", "disabled");
+    autoIrisSwitch.nextElementSibling.classList.add("disabled");
   }
 }
 
@@ -170,6 +256,8 @@ function onMessage(event) {
   setFocus(focus);
   setIris(iris);
   setZoom(zoom);
+  setFocusLimits(focus_ll, focus_ul);
+  setAutoIris(autoIris);
   lastMessageTimestamp = Date.now();
 }
 
@@ -199,31 +287,45 @@ function onLoad(event) {
   messageAnalog[0] = focusSlider.value;
   messageAnalog[1] = irisSlider.value;
   messageAnalog[2] = zoomSlider.value;
-  //messageAnalog[3] = ;
-  //messageAnalog[4] = ;
+  messageAnalog[3] = focusSlider_ll.value;
+  messageAnalog[4] = focusSlider_ul.value;
+  messageDigital[0] = autoIrisSwitch.checked;
 }
 
-function getControls(){
+function getControls() {
   focusSlider = document.getElementById("focus");
   focusLabel = document.getElementById("focusText");
+  focusLimitsContainer = document.getElementById("focus-ext-container");
+  focusSlider_ll = document.getElementById("focus_ll");
+  focusSlider_ul = document.getElementById("focus_ul");
   irisSlider = document.getElementById("iris");
   irisLabel = document.getElementById("irisText");
   zoomSlider = document.getElementById("zoom");
   zoomLabel = document.getElementById("zoomText");
+  extFocusSwitch = document.getElementById("extFocusSwitch");
+  autoIrisSwitch = document.getElementById("autoIris");
 }
 
-
-function setFocus(value){
+function setFocus(value) {
   focusSlider.value = value;
   focusLabel.innerHTML = value;
 }
 
-function setIris(value){
+function setIris(value) {
   irisSlider.value = value;
   irisLabel.innerHTML = value;
 }
 
-function setZoom(value){
+function setZoom(value) {
   zoomSlider.value = value;
   zoomLabel.innerHTML = value;
+}
+
+function setFocusLimits(value1, value2) {
+  focusSlider_ll.value = value1;
+  focusSlider_ul.value = value2;
+}
+
+function setAutoIris(auto) {
+  autoIrisSwitch.checked = auto;
 }
