@@ -1,0 +1,47 @@
+<!DOCTYPE HTML>
+<html>
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=0.9">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <link rel="apple-touch-icon" sizes="120x120" href="/apple-icon-120x120.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png">
+    <link rel="stylesheet" type="text/css" href="style.css">
+    <script src="script.js" defer></script>
+    <title>HC-X1 Remote</title>
+</head>
+
+<body>
+    <h2>HC-X1 Remote</h2>
+    <p><span>Focus: </span><span id="focusText">%FOCUSVALUE%</span></p>
+    <p><input type="range" oninput="updateSlider(this)" onchange="updateSlider(this, true)" id="focus" min="0"
+            max="1000" value="%FOCUSVALUE%" step="1" class="slider"></p>
+    <div class="container" id="focus-ext-container">
+        <span class="multi-range">
+            <input type="range" oninput="onLowerSliderInput()" min="0" max="1000" value="%FOCUSVALUE_LL%" id="focus_ll"
+                step="1" class="slider ll">
+            <input type="range" oninput="onUpperSliderInput()" min="0" max="1000" value="%FOCUSVALUE_UL%" id="focus_ul"
+                step="1" class="slider ul">
+        </span>
+    </div>
+    <p><span>Iris: </span><span id="irisText">%IRISVALUE%</span></p>
+    <p><input type="range" oninput="updateSlider(this)" onchange="updateSlider(this, true)" id="iris" min="0" max="1000"
+            value="%IRISVALUE%" step="1" class="slider"></p>
+    <p><span>Zoom: </span><span id="zoomText">%ZOOMVALUE%</span></p>
+    <p><input type="range" oninput="updateSliderZoom(this)" onchange="updateSliderZoom(this, true)" id="zoom" min="0"
+            max="1000" value="%ZOOMVALUE%" step="1" class="slider zoom"></p>
+    <div class="container">
+        <label class="switch">
+            <input type="checkbox" onchange="onAutoIrisSwitch(this)" id="autoIris" %AUTOIRIS%>
+            <span class="toggleswitch"></span>
+        </label><span>Auto Iris</span>
+    </div>
+    <div class="container">
+        <label class="switch">
+            <input type="checkbox" onchange="onExtendedFocusControl(this)" id="extFocusSwitch" checked>
+            <span class="toggleswitch"></span>
+        </label><span>Focus Limit Control</span>
+    </div>
+</body>
+
+</html>
